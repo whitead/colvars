@@ -9,3 +9,9 @@ To obtain the latest version, download this repository (either as a Zip file or 
 
 Use the "Issues" tab of this repository page to submit bug reports, or to suggest new features.
 
+
+
+Fork Notes
+==========
+Refactor colvarbias_harmonic to use a templated energy and force function. Rename 
+to colvarbias_restraint and then make harmonic and linear versions.

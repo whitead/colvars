@@ -246,7 +246,7 @@ void colvarmodule::init_biases (std::string const &conf)
       if (harm_conf.size()) {
         cvm::log (cvm::line_marker);
         cvm::increase_depth();
-        biases.push_back (new colvarbias_harmonic (harm_conf, "harmonic"));
+        biases.push_back (new colvarbias_restraint_harmonic (harm_conf, "harmonic"));
         (biases.back())->check_keywords (harm_conf, "harmonic");
         cvm::decrease_depth();
         n_harm_biases++;
