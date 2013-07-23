@@ -392,7 +392,7 @@ cvm::real colvarbias_restraint::update()
 
   // Force and energy calculation
   for (size_t i = 0; i < colvars.size(); i++) {
-    colvar_forces[i] -= restraint_force(restraint_convert_k(force_k, colvars[i]->width),
+    colvar_forces[i] = -restraint_force(restraint_convert_k(force_k, colvars[i]->width),
 					colvars[i],
 					colvar_centers[i]);
     bias_energy += restraint_potential(restraint_convert_k(force_k, colvars[i]->width),
