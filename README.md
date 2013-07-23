@@ -13,5 +13,4 @@ Use the "Issues" tab of this repository page to submit bug reports, or to sugges
 
 Fork Notes
 ==========
-Refactor colvarbias_harmonic to use a templated energy and force function. Rename 
-to colvarbias_restraint and then make harmonic and linear versions.
+This fork implements linear restraints. 

@@ -125,13 +125,6 @@ colvarbias_restraint::colvarbias_restraint (std::string const &conf,
     target_nstages (0)
 {
   get_keyval (conf, "forceConstant", force_k, 1.0);
-  for (size_t i = 0; i < colvars.size(); i++) {
-    if (colvars[i]->width != 1.0)
-      cvm::log ("The force constant for colvar \""+colvars[i]->name+
-                "\" will be rescaled to "+
-                cvm::to_str (restraint_convert_k(force_k, colvars[i]->width))+
-                " according to the specified width.\n");
-  }
 
   // get the initial restraint centers
   colvar_centers.resize (colvars.size());
@@ -598,7 +591,15 @@ std::ostream & colvarbias_restraint::write_traj (std::ostream &os)
 }
 
 colvarbias_restraint_harmonic::colvarbias_restraint_harmonic(std::string const &conf, char const *key) :
-  colvarbias_restraint(conf, key) {}
+  colvarbias_restraint(conf, key) {
+  for (size_t i = 0; i < colvars.size(); i++) {
+    if (colvars[i]->width != 1.0)
+      cvm::log ("The force constant for colvar \""+colvars[i]->name+
+                "\" will be rescaled to "+
+                cvm::to_str (restraint_convert_k(force_k, colvars[i]->width))+
+                " according to the specified width.\n");
+  }
+}
 
 cvm::real colvarbias_restraint_harmonic::restraint_potential(cvm::real k,  colvar* x,  const colvarvalue &xcenter) const 
 {
@@ -617,7 +618,15 @@ cvm::real colvarbias_restraint_harmonic::restraint_convert_k(cvm::real k, cvm::r
 
 
 colvarbias_restraint_linear::colvarbias_restraint_linear(std::string const &conf, char const *key) :
-  colvarbias_restraint(conf, key) {}
+  colvarbias_restraint(conf, key) {
+  for (size_t i = 0; i < colvars.size(); i++) {
+    if (colvars[i]->width != 1.0)
+      cvm::log ("The force constant for colvar \""+colvars[i]->name+
+                "\" will be rescaled to "+
+                cvm::to_str (restraint_convert_k(force_k, colvars[i]->width))+
+                " according to the specified width.\n");
+  }
+}
 
 cvm::real colvarbias_restraint_linear::restraint_potential(cvm::real k,  colvar* x,  const colvarvalue &xcenter) const 
 {
