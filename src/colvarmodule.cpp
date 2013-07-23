@@ -3,6 +3,7 @@
 #include "colvarproxy.h"
 #include "colvar.h"
 #include "colvarbias.h"
+#include "colvarbias_alb.h"
 #include "colvarbias_meta.h"
 #include "colvarbias_abf.h"
 
@@ -273,6 +274,25 @@ void colvarmodule::init_biases (std::string const &conf)
         cvm::log ("Warning: \"linear\" keyword found without configuration.\n");
       }
       lin_conf = "";
+    }
+  }
+
+  {
+    /// initialize adaptive linear biases
+    std::string alb_conf = "";
+    size_t alb_pos = 0;
+    while (parse->key_lookup (conf, "ALB", alb_conf, alb_pos)) {
+      if (alb_conf.size()) {
+        cvm::log (cvm::line_marker);
+        cvm::increase_depth();
+        biases.push_back (new colvarbias_alb (alb_conf, "ALB"));
+        (biases.back())->check_keywords (alb_conf, "ALB");
+        cvm::decrease_depth();
+        n_rest_biases++;
+      } else {
+        cvm::log ("Warning: \"ALB\" keyword found without configuration.\n");
+      }
+      alb_conf = "";
     }
   }
 
