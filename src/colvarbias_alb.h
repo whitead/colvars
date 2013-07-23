@@ -30,10 +30,20 @@ protected:
   /// \brief Restraint centers
   std::vector<colvarvalue> colvar_centers;  
 
-  /// \brief colvar moments, used for calculating variance
+  /// \brief colvar moments, used for calculating the gradient
   std::vector<colvarvalue> means;
   std::vector<cvm::real> means_sq;
-  unsigned long int update_calls;
+  std::vector<colvarvalue> means_cu;
+  int update_calls;
+
+  ///\brief how often to update coupling force
+  int update_freq;
+
+  ///\brief Estimated range of coupling force values
+  cvm::real max_coupling_change;
+
+  /// \brief accumated couping force; used in stochastic online gradient descent algorithm
+  cvm::real coupling_force_accum;
 
   /// \brief current coupling force
   cvm::real coupling_force; 
@@ -41,8 +51,8 @@ protected:
   /// \brief flag for outputting colvar centers
   bool b_output_centers;
 
-  /// \brief flag for outputting colvar estimated fluctuations
-  bool b_output_var;
+  /// \brief flag for outputting current gradient
+  bool b_output_grad;
 
   /// \brief flag for outputting coupling force
   bool b_output_coupling;

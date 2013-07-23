@@ -1,25 +1,30 @@
 #include "colvarmodule.h"
 #include "colvarbias_alb.h"
 #include "colvarbias.h"
+#include <stdio.h>
 
 colvarbias_alb::colvarbias_alb(std::string const &conf, char const *key) :
-  colvarbias(conf, key), coupling_force(0.0), update_calls(0) {
+  colvarbias(conf, key), coupling_force(0.0), update_calls(0), coupling_force_accum(0.) {
 
   // get the initial restraint centers
   colvar_centers.resize (colvars.size());
   
   means.resize(colvars.size());
   means_sq.resize(colvars.size());
+  means_cu.resize(colvars.size());
 
   for (size_t i = 0; i < colvars.size(); i++) {
     colvar_centers[i].type (colvars[i]->type());
 
     //copy colvars for mean
-    means[i].type (colvars[i]->type());
     means[i] = colvarvalue(colvars[i]->value());
+    means_cu[i] = colvarvalue(colvars[i]->value());
     //set them to null
     means[i].reset();
+    means_cu[i].reset();
+    //zero other moments
     means_sq[i] = 0;
+
   }
   if (get_keyval (conf, "centers", colvar_centers, colvar_centers)) {
     for (size_t i = 0; i < colvars.size(); i++) {
@@ -34,9 +39,17 @@ colvarbias_alb::colvarbias_alb(std::string const &conf, char const *key) :
     cvm::fatal_error ("Error: number of centers does not match "
                       "that of collective variables.\n");
 
+  if(!get_keyval (conf, "UpdateFrequency", update_freq, 0))
+    cvm::fatal_error("Error: must set updateFrequency for apadtive linear bias.\n");
+
   get_keyval (conf, "outputCenters", b_output_centers, false);
-  get_keyval (conf, "outputVariance", b_output_var, false);
+  get_keyval (conf, "outputGradient", b_output_grad, false);
   get_keyval (conf, "outputCoupling", b_output_coupling, true);
+
+  if(cvm::temperature() > 0)
+    get_keyval (conf, "couplingRange", max_coupling_change, cvm::temperature() * cvm::boltzmann());
+  else
+    get_keyval (conf, "couplingRange", max_coupling_change, cvm::boltzmann());
 
   if (cvm::debug())
     cvm::log ("Done initializing a new adaptive linear bias.\n");
@@ -44,6 +57,7 @@ colvarbias_alb::colvarbias_alb(std::string const &conf, char const *key) :
 }
 
 colvarbias_alb::~colvarbias_alb() {
+  
   if (cvm::n_rest_biases > 0)
     cvm::n_rest_biases -= 1;
 }
@@ -71,11 +85,44 @@ cvm::real colvarbias_alb::update() {
     //scale down without copying
     means[i] *= (update_calls - 1.) / update_calls;
     means_sq[i] *= (update_calls - 1.) / update_calls;
+    means_cu[i] *= (update_calls - 1.) / update_calls;
 
     //add with copy from divide :(
     means[i] += colvars[i]->value() / static_cast<cvm::real> (update_calls);
 
     means_sq[i] += colvars[i]->value().norm2() / static_cast<cvm::real> (update_calls);
+    means_cu[i] += colvars[i]->value().norm2() * colvars[i]->value() / static_cast<cvm::real> (update_calls);
+  }
+
+
+  //now we update coupling force, if necessary
+  if(update_calls % update_freq == 0) {
+    
+    //use estimated variance to take a step
+    cvm::real step_size = 0;
+    cvm::real temp;
+
+    //reset means and means_sq
+    for(size_t i = 0; i < colvars.size(); i++) {
+      
+      temp = means_cu[i] - means[i] * means_sq[i] - 2. * colvar_centers[i] * means_sq[i] + 2. *
+	colvar_centers[i] * means[i] * means[i];
+      
+      if(cvm::temperature() > 0)
+	step_size -= temp / (cvm::temperature()  * cvm::boltzmann());
+      else
+	step_size -= temp / cvm::boltzmann();
+
+      means[i].reset();
+      means_sq[i] = 0;
+      means_cu[i].reset();
+    }
+    
+    coupling_force_accum += step_size * step_size;
+    coupling_force -= max_coupling_change / sqrt(coupling_force_accum) * step_size;
+
+    update_calls = 0;      
+
   }
 
   if (cvm::debug())
@@ -163,9 +210,9 @@ std::ostream & colvarbias_alb::write_traj_label (std::ostream &os)
     os << " Alpha_"
        << cvm::wrap_string (this->name, cvm::en_width-6);
 
-  if(b_output_var)
+  if(b_output_grad)
     for(size_t i = 0; i < means.size(); i++) {
-      os << "Var_"
+      os << "Grad_"
 	 << cvm::wrap_string(colvars[i]->name, cvm::cv_width - 4);
     }
 
@@ -202,11 +249,26 @@ std::ostream & colvarbias_alb::write_traj (std::ostream &os)
          << colvar_centers[i];
     }
 
-  if(b_output_var) 
+  if(b_output_grad) 
     for(size_t i = 0; i < means.size(); i++) {
       os << " "
 	 << std::setprecision(cvm::cv_prec) << std::setw(cvm::cv_width)
-	<< means_sq[i] - means[i].norm2();
+	 << -(means_cu[i] - means[i] * means_sq[i] - 2. * colvar_centers[i] * means_sq[i] + 2. *
+	      colvar_centers[i] * means[i] * means[i]);
+
+      os << " "
+	 << std::setprecision(cvm::cv_prec) << std::setw(cvm::cv_width)
+	 << (means[i].norm());
+
+      os << " "
+	 << std::setprecision(cvm::cv_prec) << std::setw(cvm::cv_width)
+	 << (means_sq[i]);
+
+      os << " "
+	 << std::setprecision(cvm::cv_prec) << std::setw(cvm::cv_width)
+	 << (means_cu[i].norm());
+
+
 
     }
 
