@@ -14,8 +14,9 @@ colvarbias::colvarbias (std::string const &conf, char const *key)
   if (to_lower_cppstr (key_str) == std::string ("abf")) {
     rank = cvm::n_abf_biases+1;
   }
-  if (to_lower_cppstr (key_str) == std::string ("harmonic")) {
-    rank = cvm::n_harm_biases+1;
+  if (to_lower_cppstr (key_str) == std::string ("harmonic") || 
+      to_lower_cppstr (key_str) == std::string ("linear")) {
+    rank = cvm::n_rest_biases+1;
   }
   if (to_lower_cppstr (key_str) == std::string ("histogram")) {
     rank = cvm::n_histo_biases+1;
@@ -209,8 +210,8 @@ colvarbias_restraint::colvarbias_restraint (std::string const &conf,
 
 colvarbias_restraint::~colvarbias_restraint ()
 {
-  if (cvm::n_harm_biases > 0)
-    cvm::n_harm_biases -= 1;
+  if (cvm::n_rest_biases > 0)
+    cvm::n_rest_biases -= 1;
 }
 
 
@@ -398,19 +399,6 @@ cvm::real colvarbias_restraint::update()
     bias_energy += restraint_potential(restraint_convert_k(force_k, colvars[i]->width),
 				       colvars[i],
 				       colvar_centers[i]);
-				       
-					
-    //    colvar_forces[i] =
-    //      (-0.5) * force_k /
-    //      (colvars[i]->width * colvars[i]->width) *
-    //      colvars[i]->dist2_lgrad (colvars[i]->value(),
-    //                               colvar_centers[i]);
-    //    bias_energy += 0.5 * force_k / (colvars[i]->width * colvars[i]->width) *
-    //              colvars[i]->dist2(colvars[i]->value(), colvar_centers[i]);
-    //    if (cvm::debug())
-    //      cvm::log ("dist_grad["+cvm::to_str (i)+
-    //                "] = "+cvm::to_str (colvars[i]->dist2_lgrad (colvars[i]->value(),
-    //                               colvar_centers[i]))+"\n");
   }
 
   if (b_output_acc_work) {
@@ -642,16 +630,3 @@ cvm::real colvarbias_restraint_linear::restraint_convert_k(cvm::real k, cvm::rea
 {
   return k / dist_measure;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
