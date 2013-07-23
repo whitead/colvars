@@ -13,4 +13,9 @@ Use the "Issues" tab of this repository page to submit bug reports, or to sugges
 
 Fork Notes
 ==========
-This fork implements linear restraints. 
+This fork has an implementation of linear restraints in additiona to harmonic.
+
+Next up, create a subclass of the bias class which is similar to the
+restraint class but which uses adapative linear. Remember, the force
+constants update with SOGD and the gradient is approximated as the
+running variance of the CV.
