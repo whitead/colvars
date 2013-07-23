@@ -1,5 +1,6 @@
 #include "colvarmodule.h"
-#include "colvarbias_abf.h"
+#include "colvarbias_alb.h"
+#include "colvarbias.h"
 
 colvarbias_alb::colvarbias_alb(std::string const &conf, char const *key) :
   colvarbias(conf, key), coupling_force(0.0) {
@@ -14,7 +15,8 @@ colvarbias_alb::colvarbias_alb(std::string const &conf, char const *key) :
     colvar_centers[i].type (colvars[i]->type());
 
     //copy colvars for mean
-    means[i] = colvarvalue(colvars[i]);
+    means[i].type (colvars[i]->type());
+    means[i] = colvarvalue(colvars[i]->value());
     //set them to null
     means[i].reset();
     means_sq[i] = 0;
@@ -25,7 +27,7 @@ colvarbias_alb::colvarbias_alb(std::string const &conf, char const *key) :
     }
   } else {
     colvar_centers.clear();
-    cvm::fatal_error ("Error: must define the initial centers of the restraints.\n");
+    cvm::fatal_error ("Error: must define the initial centers of adaptive linear bias .\n");
   }
 
   if (colvar_centers.size() != colvars.size())
@@ -71,9 +73,9 @@ cvm::real colvarbias_alb::update() {
     means_sq[i] *= (update_calls - 1.) / update_calls;
 
     //add with copy from divide :(
-    means[i] += colvars[i] / update_calls;
+    means[i] += colvars[i]->value() / static_cast<cvm::real> (update_calls);
 
-    means_sq[i] += colvars[i].norm2() / update_calls;
+    means_sq[i] += colvars[i]->value().norm2() / update_calls;
   }
 
   if (cvm::debug())
