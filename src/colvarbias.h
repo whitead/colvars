@@ -119,10 +119,10 @@ public:
 protected:
 
   /// \brief Potential function
-  virtual cvm::real restraint_potential(cvm::real k, const &colvarvalue x, const &colvarvalue x0) const = 0;
+  virtual cvm::real restraint_potential(cvm::real k, colvar* x, const colvarvalue& xcenter) const = 0;
 
   /// \brief Force function
-  virtual colvarvalue restraint_force(cvm::real k, const &colvarvalue x, const &colvarvalue x0) const = 0;
+  virtual colvarvalue restraint_force(cvm::real k, colvar* x, const colvarvalue& xcenter) const = 0;
 
   ///\brief Unit scaling
   virtual cvm::real restraint_convert_k(cvm::real k, cvm::real dist_measure) const = 0;
@@ -190,26 +190,42 @@ protected:
   size_t target_nsteps;
 };
 
-/// \brief Bias restraint, optionally moving towards a target
-/// (implementation of \link colvarbias \endlink)
+/// \brief Harmonic bias restraint
+/// (implementation of \link colvarbias_restraint \endlink)
 class colvarbias_restraint_harmonic : public colvarbias_restraint {
   
 public:
   colvarbias_restraint_harmonic(std::string const &conf, char const *key);
 
-protected:
-  /// \brief Potential function
-  virtual cvm::real restraint_potential(cvm::real k, const &colvarvalue x, const &colvarvalue x0) const;
+protected: /// \brief Potential function
+  virtual cvm::real restraint_potential(cvm::real k,  colvar*  x, const colvarvalue& xcenter) const;
 
   /// \brief Force function
-  virtual colvarvalue restraint_force(cvm::real k, const &colvarvalue x, const &colvarvalue x0) const;
+  virtual colvarvalue restraint_force(cvm::real k,  colvar* x,  const colvarvalue& xcenter) const;
 
   ///\brief Unit scaling
   virtual cvm::real restraint_convert_k(cvm::real k, cvm::real dist_measure) const;
 
+};
 
+/// \brief Linear bias restraint
+/// (implementation of \link colvarbias_restraint \endlink)
+class colvarbias_restraint_linear : public colvarbias_restraint {
+  
+public:
+  colvarbias_restraint_linear(std::string const &conf, char const *key);
+
+protected: /// \brief Potential function
+  virtual cvm::real restraint_potential(cvm::real k,  colvar*  x, const colvarvalue& xcenter) const;
+
+  /// \brief Force function
+  virtual colvarvalue restraint_force(cvm::real k,  colvar* x,  const colvarvalue& xcenter) const;
+
+  ///\brief Unit scaling
+  virtual cvm::real restraint_convert_k(cvm::real k, cvm::real dist_measure) const;
 
 };
+
 
 #endif
 

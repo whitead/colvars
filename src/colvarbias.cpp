@@ -399,7 +399,7 @@ cvm::real colvarbias_restraint::update()
 
   // Force and energy calculation
   for (size_t i = 0; i < colvars.size(); i++) {
-    colvar_forces[i] -= restraint_force(restaint_covert_k(force_k, colvars[i]->width),
+    colvar_forces[i] -= restraint_force(restraint_convert_k(force_k, colvars[i]->width),
 					colvars[i],
 					colvar_centers[i]);
     bias_energy += restraint_potential(restraint_convert_k(force_k, colvars[i]->width),
@@ -600,17 +600,49 @@ std::ostream & colvarbias_restraint::write_traj (std::ostream &os)
 colvarbias_restraint_harmonic::colvarbias_restraint_harmonic(std::string const &conf, char const *key) :
   colvarbias_restraint(conf, key) {}
 
-cvm::real colvarbias_restraint_harmonic::restraint_potential(cvm::real k, const &colvar x, const &colvarvalue x0) const 
+cvm::real colvarbias_restraint_harmonic::restraint_potential(cvm::real k,  colvar* x,  const colvarvalue &xcenter) const 
 {
-  return 0.5 * k * x->dist2(x->value, x0);
+  return 0.5 * k * x->dist2(x->value(), xcenter);
 }
 
-colvarvalue colvarbias_restraint_harmonic::restraint_force(cvm::real k, const &colvar x, const &colvarvalue x0) const 
+colvarvalue colvarbias_restraint_harmonic::restraint_force(cvm::real k,  colvar* x,  const colvarvalue &xcenter) const 
 {
-  return 0.5 * k * x->dist2_lgrad(x->value, x0);
+  return 0.5 * k * x->dist2_lgrad(x->value(), xcenter);
 }
 
 cvm::real colvarbias_restraint_harmonic::restraint_convert_k(cvm::real k, cvm::real dist_measure) const 
 {
   return k / (dist_measure * dist_measure);
 }
+
+
+colvarbias_restraint_linear::colvarbias_restraint_linear(std::string const &conf, char const *key) :
+  colvarbias_restraint(conf, key) {}
+
+cvm::real colvarbias_restraint_linear::restraint_potential(cvm::real k,  colvar* x,  const colvarvalue &xcenter) const 
+{
+  return k * x->dist2(x->value(), xcenter);
+}
+
+colvarvalue colvarbias_restraint_linear::restraint_force(cvm::real k,  colvar* x,  const colvarvalue &xcenter) const 
+{
+  return k * x->dist2_lgrad(x->value(), xcenter);
+}
+
+cvm::real colvarbias_restraint_linear::restraint_convert_k(cvm::real k, cvm::real dist_measure) const 
+{
+  return k / dist_measure;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
