@@ -3,7 +3,7 @@
 #include "colvarbias.h"
 
 colvarbias_alb::colvarbias_alb(std::string const &conf, char const *key) :
-  colvarbias(conf, key), coupling_force(0.0) {
+  colvarbias(conf, key), coupling_force(0.0), update_calls(0) {
 
   // get the initial restraint centers
   colvar_centers.resize (colvars.size());
@@ -75,7 +75,7 @@ cvm::real colvarbias_alb::update() {
     //add with copy from divide :(
     means[i] += colvars[i]->value() / static_cast<cvm::real> (update_calls);
 
-    means_sq[i] += colvars[i]->value().norm2() / update_calls;
+    means_sq[i] += colvars[i]->value().norm2() / static_cast<cvm::real> (update_calls);
   }
 
   if (cvm::debug())
@@ -202,11 +202,12 @@ std::ostream & colvarbias_alb::write_traj (std::ostream &os)
          << colvar_centers[i];
     }
 
-  if(b_output_var)
+  if(b_output_var) 
     for(size_t i = 0; i < means.size(); i++) {
       os << " "
 	 << std::setprecision(cvm::cv_prec) << std::setw(cvm::cv_width)
-	 << means_sq[i] - means[i].norm2();
+	<< means_sq[i] - means[i].norm2();
+
     }
 
   return os;
