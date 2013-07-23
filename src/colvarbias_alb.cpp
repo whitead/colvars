@@ -159,6 +159,16 @@ std::ostream & colvarbias_alb::write_traj_label (std::ostream &os)
     os << " E_"
        << cvm::wrap_string (this->name, cvm::en_width-2);
 
+  if (b_output_coupling)
+    os << " Alpha_"
+       << cvm::wrap_string (this->name, cvm::en_width-6);
+
+  if(b_output_var)
+    for(size_t i = 0; i < means.size(); i++) {
+      os << "Var_"
+	 << cvm::wrap_string(colvars[i]->name, cvm::cv_width - 4);
+    }
+
   if (b_output_centers)
     for (size_t i = 0; i < colvars.size(); i++) {
       size_t const this_cv_width = (colvars[i]->value()).output_width (cvm::cv_width);
