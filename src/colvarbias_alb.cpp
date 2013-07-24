@@ -76,7 +76,7 @@ cvm::real colvarbias_alb::update() {
   //log the moments of the CVs
   // Force and energy calculation
   for (size_t i = 0; i < colvars.size(); i++) {
-    colvar_forces[i] = restraint_force(restraint_convert_k(coupling_force, colvars[i]->width),
+    colvar_forces[i] = -restraint_force(restraint_convert_k(coupling_force, colvars[i]->width),
 					colvars[i],
 					colvar_centers[i]);
     bias_energy += restraint_potential(restraint_convert_k(coupling_force, colvars[i]->width),
@@ -108,9 +108,9 @@ cvm::real colvarbias_alb::update() {
 	colvar_centers[i] * means[i] * means[i];
       
       if(cvm::temperature() > 0)
-	step_size -= temp / (cvm::temperature()  * cvm::boltzmann());
+	step_size += temp / (cvm::temperature()  * cvm::boltzmann());
       else
-	step_size -= temp / cvm::boltzmann();
+	step_size += temp / cvm::boltzmann();
 
       means[i].reset();
       means_sq[i] = 0;
