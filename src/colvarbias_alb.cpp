@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 colvarbias_alb::colvarbias_alb(std::string const &conf, char const *key) :
-  colvarbias(conf, key), coupling_force(0.0), update_calls(0), coupling_force_accum(1.) {
+  colvarbias(conf, key), coupling_force(0.0), update_calls(0), coupling_force_accum(1.), corr_time(0), b_equilibration(true) {
 
   // get the initial restraint centers
   colvar_centers.resize (colvars.size());
@@ -41,6 +41,9 @@ colvarbias_alb::colvarbias_alb(std::string const &conf, char const *key) :
 
   if(!get_keyval (conf, "UpdateFrequency", update_freq, 0))
     cvm::fatal_error("Error: must set updateFrequency for apadtive linear bias.\n");
+  
+  //assume update frequency five times the correlation time.
+  corr_time = (int) update_freq / 5.;
 
   get_keyval (conf, "outputCenters", b_output_centers, false);
   get_keyval (conf, "outputGradient", b_output_grad, false);
@@ -82,20 +85,29 @@ cvm::real colvarbias_alb::update() {
     bias_energy += restraint_potential(restraint_convert_k(coupling_force, colvars[i]->width),
 				       colvars[i],
 				       colvar_centers[i]);
-    //scale down without copying
-    means[i] *= (update_calls - 1.) / update_calls;
-    means_sq[i] *= (update_calls - 1.) / update_calls;
-    means_cu[i] *= (update_calls - 1.) / update_calls;
 
-    //add with copy from divide
-    means[i] += colvars[i]->value() / static_cast<cvm::real> (update_calls);
-    means_sq[i] += colvars[i]->value().norm2() / static_cast<cvm::real> (update_calls);
-    means_cu[i] += colvars[i]->value().norm2() * colvars[i]->value() / static_cast<cvm::real> (update_calls);
+    if(!b_equilibration) {
+
+      //scale down without copying
+      means[i] *= (update_calls - 1.) / update_calls;
+      means_sq[i] *= (update_calls - 1.) / update_calls;
+      means_cu[i] *= (update_calls - 1.) / update_calls;
+      
+      //add with copy from divide
+      means[i] += colvars[i]->value() / static_cast<cvm::real> (update_calls);
+      means_sq[i] += colvars[i]->value().norm2() / static_cast<cvm::real> (update_calls);
+      means_cu[i] += colvars[i]->value().norm2() * colvars[i]->value() / static_cast<cvm::real> (update_calls);
+
+    }
   }
 
+  if(b_equilibration && update_calls == 2 * corr_time) {
+    b_equilibration = false;
+    update_calls = 0;
+  }
 
   //now we update coupling force, if necessary
-  if(update_calls % update_freq == 0) {
+  if(update_calls == update_freq) {
     
     //use estimated variance to take a step
     cvm::real step_size = 0;
@@ -121,6 +133,7 @@ cvm::real colvarbias_alb::update() {
     coupling_force += max_coupling_change / sqrt(coupling_force_accum) * step_size;
 
     update_calls = 0;      
+    b_equilibration = true;
 
   }
 
