@@ -3,8 +3,10 @@
 #include "colvarbias.h"
 #include <stdio.h>
 
+//coupling_force = force_k, in nomenclature
+
 colvarbias_alb::colvarbias_alb(std::string const &conf, char const *key) :
-  colvarbias(conf, key), coupling_force(0.0), update_calls(0), coupling_force_accum(1.), corr_time(0), b_equilibration(true) {
+  colvarbias(conf, key), update_calls(0), coupling_force_accum(1.), corr_time(0), b_equilibration(true) {
 
   // get the initial restraint centers
   colvar_centers.resize (colvars.size());
@@ -79,10 +81,10 @@ cvm::real colvarbias_alb::update() {
   //log the moments of the CVs
   // Force and energy calculation
   for (size_t i = 0; i < colvars.size(); i++) {
-    colvar_forces[i] = -restraint_force(restraint_convert_k(coupling_force, colvars[i]->width),
+    colvar_forces[i] = -restraint_force(restraint_convert_k(force_k, colvars[i]->width),
 					colvars[i],
 					colvar_centers[i]);
-    bias_energy += restraint_potential(restraint_convert_k(coupling_force, colvars[i]->width),
+    bias_energy += restraint_potential(restraint_convert_k(force_k, colvars[i]->width),
 				       colvars[i],
 				       colvar_centers[i]);
 
@@ -130,7 +132,7 @@ cvm::real colvarbias_alb::update() {
     }
     
     coupling_force_accum += step_size * step_size;
-    coupling_force += max_coupling_change / sqrt(coupling_force_accum) * step_size;
+    force_k += max_coupling_change / sqrt(coupling_force_accum) * step_size;
 
     update_calls = 0;      
     b_equilibration = true;
@@ -177,8 +179,8 @@ std::istream & colvarbias_alb::read_restart (std::istream &is)
                       "has no identifiers.\n");
   }
 
-  if (!get_keyval (conf, "couplingForce", coupling_force))
-    cvm::fatal_error ("Error: coupling force is missing from the restart.\n");
+  if (!get_keyval (conf, "forceConstant", coupling_force))
+    cvm::fatal_error ("Error: current force constant  is missing from the restart.\n");
 
   is >> brace;
   if (brace != "}") {
@@ -200,7 +202,7 @@ std::ostream & colvarbias_alb::write_restart (std::ostream &os)
 
   os << "    couplingForce "
      << std::setprecision (cvm::en_prec)
-     << std::setw (cvm::en_width) << coupling_force << "\n";
+     << std::setw (cvm::en_width) << force_k << "\n";
 
 
   os << "  }\n"
@@ -251,7 +253,7 @@ std::ostream & colvarbias_alb::write_traj (std::ostream &os)
   if(b_output_coupling)
     os << " "
        << std::setprecision (cvm::en_prec) << std::setw (cvm::en_width)
-       << coupling_force;
+       << force_k;
 
 
   if (b_output_centers)
