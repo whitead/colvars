@@ -51,6 +51,9 @@ colvarbias_alb::colvarbias_alb(std::string const &conf, char const *key) :
   get_keyval (conf, "outputGradient", b_output_grad, false);
   get_keyval (conf, "outputCoupling", b_output_coupling, true);
 
+  //initial guess
+  get_keyval (conf, "forceConstant", coupling_force, 0.0);
+
   if(cvm::temperature() > 0)
     get_keyval (conf, "couplingRange", max_coupling_change, 3 * cvm::temperature() * cvm::boltzmann());
   else
@@ -119,7 +122,8 @@ cvm::real colvarbias_alb::update() {
     for(size_t i = 0; i < colvars.size(); i++) {
       
       temp = means_cu[i] - means[i] * means_sq[i] - 2. * colvar_centers[i] * means_sq[i] + 2. *
-	colvar_centers[i] * means[i] * means[i];
+      	colvar_centers[i] * means[i] * means[i];
+      //temp = -2. * (means[i] - colvar_centers[i]) * (means_sq[i] - means[i] * means[i]);
       
       if(cvm::temperature() > 0)
 	step_size += temp / (cvm::temperature()  * cvm::boltzmann());
@@ -133,6 +137,7 @@ cvm::real colvarbias_alb::update() {
     
     coupling_force_accum += step_size * step_size;
     force_k += max_coupling_change / sqrt(coupling_force_accum) * step_size;
+
 
     update_calls = 0;      
     b_equilibration = true;
