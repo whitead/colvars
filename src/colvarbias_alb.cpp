@@ -44,7 +44,10 @@ colvarbias_alb::colvarbias_alb(std::string const &conf, char const *key) :
     cvm::fatal_error("Error: must set updateFrequency for apadtive linear bias.\n");
   
   //assume update frequency is twice the correlation time.
-  equil_time = (int) update_freq / 2.;
+  equil_time = (int) (update_freq / 2.) + 1;
+  update_freq = 2 * equil_time;
+  if(update_freq == 0)
+    cvm::fatal_error("Error: must set updateFrequency to greater than 1.\n");
 
   get_keyval (conf, "outputCenters", b_output_centers, false);
   get_keyval (conf, "outputGradient", b_output_grad, false);
