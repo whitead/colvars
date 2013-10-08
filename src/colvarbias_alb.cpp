@@ -4,9 +4,8 @@
 #include <stdio.h>
 
 
-//coupling_force = force_k, in nomenclature
 colvarbias_alb::colvarbias_alb(std::string const &conf, char const *key) :
-  colvarbias(conf, key), update_calls(0), coupling_force_accum(1.), corr_time(0), b_equilibration(true) {
+  colvarbias(conf, key), update_calls(0), coupling_force(0.), coupling_force_accum(1.), b_equilibration(true) {
 
 
   // get the initial restraint centers
@@ -56,7 +55,7 @@ colvarbias_alb::colvarbias_alb(std::string const &conf, char const *key) :
   get_keyval (conf, "outputCoupling", b_output_coupling, true);
 
   //initial guess
-  get_keyval (conf, "forceConstant", force_k, 0.0);
+  get_keyval (conf, "forceConstant", coupling_force, 0.0);
 
   if(cvm::temperature() > 0)
     get_keyval (conf, "couplingRange", max_coupling_change, 3 * cvm::temperature() * cvm::boltzmann());
@@ -88,10 +87,10 @@ cvm::real colvarbias_alb::update() {
   //log the moments of the CVs
   // Force and energy calculation
   for (size_t i = 0; i < colvars.size(); i++) {
-    colvar_forces[i] = -restraint_force(restraint_convert_k(force_k, colvars[i]->width),
+    colvar_forces[i] = -restraint_force(restraint_convert_k(coupling_force, colvars[i]->width),
 					colvars[i],
 					colvar_centers[i]);
-    bias_energy += restraint_potential(restraint_convert_k(force_k, colvars[i]->width),
+    bias_energy += restraint_potential(restraint_convert_k(coupling_force, colvars[i]->width),
 				       colvars[i],
 				       colvar_centers[i]);
 
@@ -125,9 +124,9 @@ cvm::real colvarbias_alb::update() {
     //reset means and means_sq
     for(size_t i = 0; i < colvars.size(); i++) {
       
-      temp = means_cu[i] - means[i] * means_sq[i] - 2. * colvar_centers[i] * means_sq[i] + 2. *
-      	colvar_centers[i] * means[i] * means[i];
-      //temp = -2. * (means[i] - colvar_centers[i]) * (means_sq[i] - means[i] * means[i]);
+      // temp = means_cu[i] - means[i] * means_sq[i] - 2. * colvar_centers[i] * means_sq[i] + 2. *
+      //colvar_centers[i] * means[i] * means[i];
+      temp = -2. * (means[i] - colvar_centers[i]) * (means_sq[i] - means[i] * means[i]);
       
       if(cvm::temperature() > 0)
 	step_size += temp / (cvm::temperature()  * cvm::boltzmann());
@@ -140,7 +139,7 @@ cvm::real colvarbias_alb::update() {
     }
     
     coupling_force_accum += step_size * step_size;
-    force_k += max_coupling_change / sqrt(coupling_force_accum) * step_size;
+    coupling_force += max_coupling_change / sqrt(coupling_force_accum) * step_size;
 
 
     update_calls = 0;      
@@ -187,6 +186,10 @@ std::istream & colvarbias_alb::read_restart (std::istream &is)
     cvm::fatal_error ("Error: \"ALB\" block in the restart file "
                       "has no identifiers.\n");
   }
+
+  if (!get_keyval (conf, "forceConstant", coupling_force))
+    cvm::fatal_error ("Error: current force constant  is missing from the restart.\n");
+
   is >> brace;
   if (brace != "}") {
     cvm::fatal_error ("Error: corrupt restart information for adaptive linear bias \""+
@@ -207,7 +210,7 @@ std::ostream & colvarbias_alb::write_restart (std::ostream &os)
 
   os << "    couplingForce "
      << std::setprecision (cvm::en_prec)
-     << std::setw (cvm::en_width) << force_k << "\n";
+     << std::setw (cvm::en_width) << coupling_force << "\n";
 
 
   os << "  }\n"
@@ -258,7 +261,7 @@ std::ostream & colvarbias_alb::write_traj (std::ostream &os)
   if(b_output_coupling)
     os << " "
        << std::setprecision (cvm::en_prec) << std::setw (cvm::en_width)
-       << force_k;
+       << coupling_force;
 
 
   if (b_output_centers)
