@@ -3,8 +3,9 @@
 #include "colvarbias.h"
 #include <stdio.h>
 
+
 colvarbias_alb::colvarbias_alb(std::string const &conf, char const *key) :
-  colvarbias(conf, key), coupling_force(0.0), update_calls(0), coupling_force_accum(1.), corr_time(0), b_equilibration(true) {
+  colvarbias(conf, key), coupling_force(0.0), update_calls(0), coupling_force_accum(1.), equil_time(0), b_equilibration(true) {
 
   // get the initial restraint centers
   colvar_centers.resize (colvars.size());
@@ -42,8 +43,8 @@ colvarbias_alb::colvarbias_alb(std::string const &conf, char const *key) :
   if(!get_keyval (conf, "UpdateFrequency", update_freq, 0))
     cvm::fatal_error("Error: must set updateFrequency for apadtive linear bias.\n");
   
-  //assume update frequency five times the correlation time.
-  corr_time = (int) update_freq / 5.;
+  //assume update frequency is twice the correlation time.
+  equil_time = (int) update_freq / 2.;
 
   get_keyval (conf, "outputCenters", b_output_centers, false);
   get_keyval (conf, "outputGradient", b_output_grad, false);
@@ -95,16 +96,16 @@ cvm::real colvarbias_alb::update() {
       means[i] *= (update_calls - 1.) / update_calls;
       means_sq[i] *= (update_calls - 1.) / update_calls;
       means_cu[i] *= (update_calls - 1.) / update_calls;
+
       
       //add with copy from divide
       means[i] += colvars[i]->value() / static_cast<cvm::real> (update_calls);
       means_sq[i] += colvars[i]->value().norm2() / static_cast<cvm::real> (update_calls);
       means_cu[i] += colvars[i]->value().norm2() * colvars[i]->value() / static_cast<cvm::real> (update_calls);
-
     }
   }
 
-  if(b_equilibration && update_calls == 2 * corr_time) {
+  if(b_equilibration && update_calls == equil_time) {
     b_equilibration = false;
     update_calls = 0;
   }
@@ -280,7 +281,6 @@ std::ostream & colvarbias_alb::write_traj (std::ostream &os)
       os << " "
 	 << std::setprecision(cvm::cv_prec) << std::setw(cvm::cv_width)
 	 << (means_sq[i]);
-
       os << " "
 	 << std::setprecision(cvm::cv_prec) << std::setw(cvm::cv_width)
 	 << (means_cu[i].norm());
