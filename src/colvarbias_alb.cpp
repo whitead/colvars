@@ -56,7 +56,7 @@ colvarbias_alb::colvarbias_alb(std::string const &conf, char const *key) :
   get_keyval (conf, "outputCoupling", b_output_coupling, true);
 
   //initial guess
-  get_keyval (conf, "forceConstant", coupling_force, 0.0);
+  get_keyval (conf, "forceConstant", force_k, 0.0);
 
   if(cvm::temperature() > 0)
     get_keyval (conf, "couplingRange", max_coupling_change, 3 * cvm::temperature() * cvm::boltzmann());
@@ -187,10 +187,6 @@ std::istream & colvarbias_alb::read_restart (std::istream &is)
     cvm::fatal_error ("Error: \"ALB\" block in the restart file "
                       "has no identifiers.\n");
   }
-
-  if (!get_keyval (conf, "forceConstant", coupling_force))
-    cvm::fatal_error ("Error: current force constant  is missing from the restart.\n");
-
   is >> brace;
   if (brace != "}") {
     cvm::fatal_error ("Error: corrupt restart information for adaptive linear bias \""+
