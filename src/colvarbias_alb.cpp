@@ -124,9 +124,9 @@ cvm::real colvarbias_alb::update() {
     //reset means and means_sq
     for(size_t i = 0; i < colvars.size(); i++) {
       
-      temp = means_cu[i] - means[i] * means_sq[i] - 2. * colvar_centers[i] * means_sq[i] + 2. *
-      colvar_centers[i] * means[i] * means[i];
-      //temp = -2. * (means[i] - colvar_centers[i]) * (means_sq[i] - means[i] * means[i]);
+      //temp = means_cu[i] - means[i] * means_sq[i] - 2. * colvar_centers[i] * means_sq[i] + 2. *
+      //colvar_centers[i] * means[i] * means[i];
+      temp = 2. * (means[i] - colvar_centers[i]) * (means_sq[i] - means[i] * means[i]);
       
       if(cvm::temperature() > 0)
 	step_size += temp / (cvm::temperature()  * cvm::boltzmann());
