@@ -5,7 +5,7 @@
 
 
 colvarbias_alb::colvarbias_alb(std::string const &conf, char const *key) :
-  colvarbias(conf, key), update_calls(0), coupling_force(0.), coupling_force_accum(1.), b_equilibration(true) {
+  colvarbias(conf, key), update_calls(0), coupling_force(0.), coupling_force_accum(0.), b_equilibration(true) {
 
 
   // get the initial restraint centers
@@ -63,7 +63,7 @@ colvarbias_alb::colvarbias_alb(std::string const &conf, char const *key) :
     get_keyval (conf, "couplingRange", max_coupling_change, 3 * cvm::boltzmann());
 
   if (cvm::debug())
-    cvm::log ("Done initializing a new adaptive linear bias.\n");
+    cvm::log (" bias.\n");
 
 }
 
@@ -95,7 +95,7 @@ cvm::real colvarbias_alb::update() {
 				       colvar_centers[i]);
 
     if(!b_equilibration) {
-
+      
       //scale down without copying
       means[i] *= (update_calls - 1.) / update_calls;
       means_sq[i] *= (update_calls - 1.) / update_calls;
@@ -139,7 +139,16 @@ cvm::real colvarbias_alb::update() {
     }
     
     coupling_force_accum += step_size * step_size;
+
+    //    printf("covariance estimate = %f\n", static_cast<double> (means_sq[0] - means[0] * means[0]));
+    //    printf("deviation = %f\n", static_cast<double> (means[0] - colvar_centers[0]));
+    //    printf("step_size = %f\n", step_size);
+    //    printf("sqrt(coupling_accum) = %f\n", sqrt(coupling_force_accum));
+    //    printf("max_coupling_change = %f\n", max_coupling_change);
+    //    printf("coupling force change = %f\n", max_coupling_change / sqrt(coupling_force_accum) * step_size);
+
     coupling_force += max_coupling_change / sqrt(coupling_force_accum) * step_size;
+      
 
 
     update_calls = 0;      
