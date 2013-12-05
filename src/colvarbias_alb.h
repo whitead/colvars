@@ -45,8 +45,15 @@ protected:
   /// \brief accumated couping force; used in stochastic online gradient descent algorithm
   cvm::real coupling_force_accum;
 
-  /// \brief current coupling force
-  cvm::real coupling_force; 
+  /// \brief coupling force
+  cvm::real set_coupling_force; 
+
+  /// \brief current coupling force, which is ramped up during equilibration to coupling_force
+  cvm::real current_coupling_force; 
+
+  /// \brief how quickly to change the coupling force
+  cvm::real coupling_force_rate; 
+
 
   /// \brief equilibration time of the colvars
   int equil_time;

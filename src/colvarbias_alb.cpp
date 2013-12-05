@@ -5,7 +5,7 @@
 
 
 colvarbias_alb::colvarbias_alb(std::string const &conf, char const *key) :
-  colvarbias(conf, key), update_calls(0), coupling_force(0.), coupling_force_accum(0.), b_equilibration(true) {
+  colvarbias(conf, key), update_calls(0), set_coupling_force(0.), current_coupling_force(0.), coupling_force_accum(0.), b_equilibration(true) {
 
 
   // get the initial restraint centers
@@ -55,7 +55,11 @@ colvarbias_alb::colvarbias_alb(std::string const &conf, char const *key) :
   get_keyval (conf, "outputCoupling", b_output_coupling, true);
 
   //initial guess
-  get_keyval (conf, "forceConstant", coupling_force, 0.0);
+  get_keyval (conf, "forceConstant", set_coupling_force, 0.0);
+  
+  //how we're going to increase to that point
+  coupling_force_rate = (set_coupling_force - current_coupling_force) / equil_time;
+  
 
   if(cvm::temperature() > 0)
     get_keyval (conf, "couplingRange", max_coupling_change, 3 * cvm::temperature() * cvm::boltzmann());
@@ -87,10 +91,10 @@ cvm::real colvarbias_alb::update() {
   //log the moments of the CVs
   // Force and energy calculation
   for (size_t i = 0; i < colvars.size(); i++) {
-    colvar_forces[i] = -restraint_force(restraint_convert_k(coupling_force, colvars[i]->width),
+    colvar_forces[i] = -restraint_force(restraint_convert_k(current_coupling_force, colvars[i]->width),
 					colvars[i],
 					colvar_centers[i]);
-    bias_energy += restraint_potential(restraint_convert_k(coupling_force, colvars[i]->width),
+    bias_energy += restraint_potential(restraint_convert_k(current_coupling_force, colvars[i]->width),
 				       colvars[i],
 				       colvar_centers[i]);
 
@@ -109,10 +113,14 @@ cvm::real colvarbias_alb::update() {
     }
   }
 
-  if(b_equilibration && update_calls == equil_time) {
-    b_equilibration = false;
-    update_calls = 0;
+  if(b_equilibration) {
+    current_coupling_force += coupling_force_rate;
+    if(update_calls == equil_time) {
+      b_equilibration = false;
+      update_calls = 0;
+    }
   }
+
 
   //now we update coupling force, if necessary
   if(update_calls == update_freq) {
@@ -147,7 +155,9 @@ cvm::real colvarbias_alb::update() {
     //    printf("max_coupling_change = %f\n", max_coupling_change);
     //    printf("coupling force change = %f\n", max_coupling_change / sqrt(coupling_force_accum) * step_size);
 
-    coupling_force += max_coupling_change / sqrt(coupling_force_accum) * step_size;
+    current_coupling_force = set_coupling_force;
+    set_coupling_force += max_coupling_change / sqrt(coupling_force_accum) * step_size;
+    coupling_force_rate = (set_coupling_force - current_coupling_force) / equil_time;
       
 
 
@@ -196,7 +206,7 @@ std::istream & colvarbias_alb::read_restart (std::istream &is)
                       "has no identifiers.\n");
   }
 
-  if (!get_keyval (conf, "forceConstant", coupling_force))
+  if (!get_keyval (conf, "forceConstant", set_coupling_force))
     cvm::fatal_error ("Error: current force constant  is missing from the restart.\n");
 
   is >> brace;
@@ -219,7 +229,7 @@ std::ostream & colvarbias_alb::write_restart (std::ostream &os)
 
   os << "    couplingForce "
      << std::setprecision (cvm::en_prec)
-     << std::setw (cvm::en_width) << coupling_force << "\n";
+     << std::setw (cvm::en_width) << set_coupling_force << "\n";
 
 
   os << "  }\n"
@@ -270,7 +280,7 @@ std::ostream & colvarbias_alb::write_traj (std::ostream &os)
   if(b_output_coupling)
     os << " "
        << std::setprecision (cvm::en_prec) << std::setw (cvm::en_width)
-       << coupling_force;
+       << current_coupling_force;
 
 
   if (b_output_centers)
