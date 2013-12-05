@@ -2,6 +2,7 @@
 #include "colvarbias_alb.h"
 #include "colvarbias.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 
 colvarbias_alb::colvarbias_alb(std::string const &conf, char const *key) :
@@ -156,15 +157,21 @@ cvm::real colvarbias_alb::update() {
       if(cvm::temperature() > 0)
 	step_size = temp / (cvm::temperature()  * cvm::boltzmann());
       else
-	step_size+= temp / cvm::boltzmann();
+	step_size = temp / cvm::boltzmann();
 
       means[i].reset();
       means_sq[i] = 0;
 
-      coupling_force_accum[i] += step_size * step_size;
-      current_coupling_force[i] = set_coupling_force[i];
-      set_coupling_force[i] += max_coupling_change[i] / sqrt(coupling_force_accum[i]) * step_size;
-      coupling_force_rate[i] = (set_coupling_force[i] - current_coupling_force[i]) / equil_time;      
+      //stochastic if we do that update or not
+      if(colvars.size() > 1 && rand() < RAND_MAX / colvars.size()) {
+	coupling_force_accum[i] += step_size * step_size;
+	current_coupling_force[i] = set_coupling_force[i];
+	set_coupling_force[i] += max_coupling_change[i] / sqrt(coupling_force_accum[i]) * step_size;
+	coupling_force_rate[i] = (set_coupling_force[i] - current_coupling_force[i]) / equil_time;      
+      } else {
+	coupling_force_rate[i] = 0;
+      }
+
     }
     
     update_calls = 0;      
