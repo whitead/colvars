@@ -70,10 +70,10 @@ protected:
   /// \brief flag for outputting coupling force
   bool b_output_coupling;
 
-  cvm::real restraint_potential(cvm::real k,  colvar*  x, const colvarvalue& xcenter) const;
+  cvm::real restraint_potential(cvm::real k,  const colvar*  x, const colvarvalue& xcenter) const;
 
   /// \brief Force function
-  colvarvalue restraint_force(cvm::real k,  colvar* x,  const colvarvalue& xcenter) const;
+  colvarvalue restraint_force(cvm::real k,  const colvar* x,  const colvarvalue& xcenter) const;
 
   ///\brief Unit scaling
   cvm::real restraint_convert_k(cvm::real k, cvm::real dist_measure) const;

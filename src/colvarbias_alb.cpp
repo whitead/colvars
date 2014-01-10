@@ -152,7 +152,8 @@ cvm::real colvarbias_alb::update() {
     //reset means and means_sq
     for(size_t i = 0; i < colvars.size(); i++) {
       
-      temp = 2. * (means[i] - colvar_centers[i]) * (means_sq[i] - means[i] * means[i]);
+      //temp = 2. * (means[i] - colvar_centers[i]) * (means_sq[i] - means[i] * means[i]);
+      temp = (means_sq[i] - means[i] * means[i]); //variance only, moving centers to function definition
       
       if(cvm::temperature() > 0)
 	step_size = temp / (cvm::temperature()  * cvm::boltzmann());
@@ -163,7 +164,7 @@ cvm::real colvarbias_alb::update() {
       means_sq[i] = 0;
 
       //stochastic if we do that update or not
-      if(colvars.size() > 1 && rand() < RAND_MAX / colvars.size()) {
+      if(colvars.size() == 1 || rand() < RAND_MAX / colvars.size()) {
 	coupling_force_accum[i] += step_size * step_size;
 	current_coupling_force[i] = set_coupling_force[i];
 	set_coupling_force[i] += max_coupling_change[i] / sqrt(coupling_force_accum[i]) * step_size;
@@ -316,14 +317,14 @@ std::ostream & colvarbias_alb::write_traj (std::ostream &os)
 }
 
 
-cvm::real colvarbias_alb::restraint_potential(cvm::real k,  colvar* x,  const colvarvalue &xcenter) const 
+cvm::real colvarbias_alb::restraint_potential(cvm::real k,  const colvar* x,  const colvarvalue &xcenter) const 
 {
-  return k * (x->value() - xcenter);
+  return k * sqrt(x->dist2(x->value(), xcenter));
 }
 
-colvarvalue colvarbias_alb::restraint_force(cvm::real k,  colvar* x,  const colvarvalue &xcenter) const 
+colvarvalue colvarbias_alb::restraint_force(cvm::real k,  const colvar* x,  const colvarvalue &xcenter) const 
 {
-  return k * x->value();
+  return k / sqrt(x->dist2(x->value(), xcenter))  * (x->value() - xcenter);
 }
 
 cvm::real colvarbias_alb::restraint_convert_k(cvm::real k, cvm::real dist_measure) const 
