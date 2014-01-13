@@ -4,8 +4,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define SMALL_NUMBER 1e-8
-
 colvarbias_alb::colvarbias_alb(std::string const &conf, char const *key) :
   colvarbias(conf, key), update_calls(0), b_equilibration(true) {
 
@@ -26,13 +24,8 @@ colvarbias_alb::colvarbias_alb(std::string const &conf, char const *key) :
 
   for (size_t i = 0; i < colvars.size(); i++) {
     colvar_centers[i].type (colvars[i]->type());
-
-    //copy colvars for mean
-    means[i] = colvarvalue(colvars[i]->value());
-    //set them to null
-    means[i].reset();
-    //zero other moments
-    means_sq[i] = 0;
+    //zero moments
+    means[i] = means_sq[i] = 0;
 
     //zero force some of the force vectors that aren't initialized
     coupling_force_accum[i] = current_coupling_force[i] = 0;
@@ -124,13 +117,13 @@ cvm::real colvarbias_alb::update() {
 
     if(!b_equilibration) {
       
-      //scale down without copying
+
+      //scale down 
       means[i] *= (update_calls - 1.) / update_calls;
       means_sq[i] *= (update_calls - 1.) / update_calls;
 
-      
-      //add with copy from divide
-      means[i] += colvars[i]->value() / static_cast<cvm::real> (update_calls);
+      //add
+      means[i] += static_cast<cvm::real>(colvars[i]->value()) / static_cast<cvm::real> (update_calls);
       means_sq[i] += colvars[i]->value().norm2() / static_cast<cvm::real> (update_calls);
     } else {
       current_coupling_force[i] += coupling_force_rate[i];
@@ -153,15 +146,14 @@ cvm::real colvarbias_alb::update() {
     //reset means and means_sq
     for(size_t i = 0; i < colvars.size(); i++) {
       
-      temp = 2. * (means[i] - colvar_centers[i]) * (means_sq[i] - means[i] * means[i]);
-      temp = (means_sq[i] - means[i] * means[i]); //variance only because I moved centers to function definition
+      temp = 2. * (means[i] - static_cast<cvm::real> (colvar_centers[i])) * (means_sq[i] - means[i] * means[i]);
       
       if(cvm::temperature() > 0)
 	step_size = temp / (cvm::temperature()  * cvm::boltzmann());
       else
 	step_size = temp / cvm::boltzmann();
 
-      means[i].reset();
+      means[i] = 0;
       means_sq[i] = 0;
 
       //stochastic if we do that update or not
@@ -310,7 +302,7 @@ std::ostream & colvarbias_alb::write_traj (std::ostream &os)
     for(size_t i = 0; i < means.size(); i++) {
       os << " "
 	 << std::setprecision(cvm::cv_prec) << std::setw(cvm::cv_width)
-	 << -(2. * (means[i] - colvar_centers[i]) * (means_sq[i] - means[i] * means[i]));
+	 << -(means_sq[i] - means[i] * means[i]);
 
     }
 
@@ -320,18 +312,16 @@ std::ostream & colvarbias_alb::write_traj (std::ostream &os)
 
 cvm::real colvarbias_alb::restraint_potential(cvm::real k,  const colvar* x,  const colvarvalue &xcenter) const 
 {
-  return k * sqrt(x->dist2(x->value(), xcenter));
+  return k * (x->value() - xcenter);
 }
 
 colvarvalue colvarbias_alb::restraint_force(cvm::real k,  const colvar* x,  const colvarvalue &xcenter) const 
 {
-  cvm::real dist = sqrt(x->dist2(x->value(), xcenter));
-  if(dist <= SMALL_NUMBER)
-    return (x->value() - xcenter);
-  return k / dist  * (x->value() - xcenter);
+  return k  * x->value();
 }
 
 cvm::real colvarbias_alb::restraint_convert_k(cvm::real k, cvm::real dist_measure) const 
 {
   return k / dist_measure;
 }
+

@@ -31,7 +31,7 @@ protected:
   std::vector<colvarvalue> colvar_centers;  
 
   /// \brief colvar moments, used for calculating the gradient
-  std::vector<colvarvalue> means;
+  std::vector<cvm::real> means;
   std::vector<cvm::real> means_sq;
   int update_calls;
 
