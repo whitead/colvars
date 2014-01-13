@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define SMALL_NUMBER 1e-8
 
 colvarbias_alb::colvarbias_alb(std::string const &conf, char const *key) :
   colvarbias(conf, key), update_calls(0), b_equilibration(true) {
@@ -152,8 +153,8 @@ cvm::real colvarbias_alb::update() {
     //reset means and means_sq
     for(size_t i = 0; i < colvars.size(); i++) {
       
-      //temp = 2. * (means[i] - colvar_centers[i]) * (means_sq[i] - means[i] * means[i]);
-      temp = (means_sq[i] - means[i] * means[i]); //variance only, moving centers to function definition
+      temp = 2. * (means[i] - colvar_centers[i]) * (means_sq[i] - means[i] * means[i]);
+      temp = (means_sq[i] - means[i] * means[i]); //variance only because I moved centers to function definition
       
       if(cvm::temperature() > 0)
 	step_size = temp / (cvm::temperature()  * cvm::boltzmann());
@@ -324,7 +325,10 @@ cvm::real colvarbias_alb::restraint_potential(cvm::real k,  const colvar* x,  co
 
 colvarvalue colvarbias_alb::restraint_force(cvm::real k,  const colvar* x,  const colvarvalue &xcenter) const 
 {
-  return k / sqrt(x->dist2(x->value(), xcenter))  * (x->value() - xcenter);
+  cvm::real dist = sqrt(x->dist2(x->value(), xcenter));
+  if(dist <= SMALL_NUMBER)
+    return (x->value() - xcenter);
+  return k / dist  * (x->value() - xcenter);
 }
 
 cvm::real colvarbias_alb::restraint_convert_k(cvm::real k, cvm::real dist_measure) const 
