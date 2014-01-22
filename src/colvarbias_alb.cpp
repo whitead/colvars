@@ -143,7 +143,22 @@ cvm::real colvarbias_alb::update() {
 	current_coupling[i] += coupling_rate[i];
 	finished_equil_flag = 0;
       }
-      
+     
+
+      //update max_coupling_change
+      if(fabs(current_coupling[i]) > max_coupling_change[i]) {
+	std::ostringstream logStream;
+	logStream << "Coupling constant for "
+		  << colvars[i]->name
+		  << " has exceeded coupling range of " 
+		  << max_coupling_change[i] 
+		  << ".\n";
+
+	max_coupling_change[i] *= 1.25;
+	logStream << "Expanding coupling range to "  << max_coupling_change[i] << ".\n";
+	cvm::log(logStream.str());	
+      }
+	
 	
     }
   }
