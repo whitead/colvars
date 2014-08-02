@@ -10,10 +10,9 @@ To obtain the latest version, download this repository (either as a Zip file or 
 Use the "Issues" tab of this repository page to submit bug reports, or to suggest new features.
 
 
-=======
-This program is distributed under the GNU Lesser General Public License, version 3. See COPYING.LESSER for complete licensing terms.
-
-
 Fork Notes
 ==========
 This fork is not meant to be used currently. It is for testing new methods of biasing simulations.
+
+This program is distributed under the GNU Lesser General Public License, version 3. See COPYING.LESSER for complete licensing terms.
+

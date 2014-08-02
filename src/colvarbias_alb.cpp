@@ -4,9 +4,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+/* Note about nomenclature. Force constant is called a coupling
+ * constant here to emphasize its changing in the code. Outwards,
+ * everything is called a force constant to keep it consistent with
+ * the rest of colvars. 
+ *
+ */
+
 colvarbias_alb::colvarbias_alb(std::string const &conf, char const *key) :
   colvarbias(conf, key), update_calls(0), b_equilibration(true) {
-
 
   // get the initial restraint centers
   colvar_centers.resize (colvars.size());
@@ -57,10 +63,17 @@ colvarbias_alb::colvarbias_alb(std::string const &conf, char const *key) :
   get_keyval (conf, "outputCenters", b_output_centers, false);
   get_keyval (conf, "outputGradient", b_output_grad, false);
   get_keyval (conf, "outputCoupling", b_output_coupling, true);
+<<<<<<< HEAD
   get_keyval (conf, "hardCouplingRange", b_hard_coupling_range, true);
 
   //initial guess
   if(!get_keyval (conf, "couplingConstant", set_coupling, set_coupling))
+=======
+  get_keyval (conf, "hardForceRange", b_hard_coupling_range, true);
+
+  //initial guess
+  if(!get_keyval (conf, "forceConstant", set_coupling, set_coupling))
+>>>>>>> master
     for(size_t i =0 ; i < colvars.size(); i++)
       set_coupling[i] = 0.;
   
@@ -69,7 +82,11 @@ colvarbias_alb::colvarbias_alb(std::string const &conf, char const *key) :
     coupling_rate[i] = (set_coupling[i] - current_coupling[i]) / update_freq;
   
 
+<<<<<<< HEAD
   if(!get_keyval (conf, "couplingRange", max_coupling_range, max_coupling_range)) {
+=======
+  if(!get_keyval (conf, "forceRange", max_coupling_range, max_coupling_range)) {
+>>>>>>> master
     //set to default
     for(size_t i = 0; i < colvars.size(); i++) {
       if(cvm::temperature() > 0) 
@@ -99,10 +116,13 @@ colvarbias_alb::~colvarbias_alb() {
   if (cvm::n_rest_biases > 0)
     cvm::n_rest_biases -= 1;
   
+<<<<<<< HEAD
   //clean up memory
   for(size_t i; i < colvars.size(); i++) {
     
   }
+=======
+>>>>>>> master
 }
 
 cvm::real colvarbias_alb::update() {
@@ -245,8 +265,39 @@ std::istream & colvarbias_alb::read_restart (std::istream &is)
                       "has no identifiers.\n");
   }
 
+<<<<<<< HEAD
   //  if (!get_keyval (conf, "forceConstant", set_coupling))
   //    cvm::fatal_error ("Error: current force constant  is missing from the restart.\n");
+=======
+  if (!get_keyval (conf, "setCoupling", set_coupling))
+    cvm::fatal_error ("Error: current setCoupling  is missing from the restart.\n");
+
+  if (!get_keyval (conf, "currentCoupling", current_coupling))
+    cvm::fatal_error ("Error: current setCoupling  is missing from the restart.\n");
+
+  if (!get_keyval (conf, "maxCouplingRange", max_coupling_range))
+    cvm::fatal_error ("Error: maxCouplingRange  is missing from the restart.\n");
+
+
+  if (!get_keyval (conf, "couplingRate", coupling_rate))
+    cvm::fatal_error ("Error: current setCoupling  is missing from the restart.\n");
+
+  if (!get_keyval (conf, "couplingAccum", coupling_accum))
+    cvm::fatal_error ("Error: couplingAccum is missing from the restart.\n");
+
+
+  if (!get_keyval (conf, "mean", means))
+    cvm::fatal_error ("Error: current mean is missing from the restart.\n");
+
+  if (!get_keyval (conf, "ssd", ssd))
+    cvm::fatal_error ("Error: current ssd is missing from the restart.\n");
+
+  if (!get_keyval (conf, "updateCalls", update_calls))
+    cvm::fatal_error ("Error: current updateCalls is missing from the restart.\n");
+
+  if (!get_keyval (conf, "b_equilibration", b_equilibration))
+    cvm::fatal_error ("Error: current updateCalls is missing from the restart.\n");
+>>>>>>> master
 
   is >> brace;
   if (brace != "}") {
@@ -255,6 +306,10 @@ std::istream & colvarbias_alb::read_restart (std::istream &is)
                       cvm::to_str (is.tellg())+" in the restart file.\n");
     is.setstate (std::ios::failbit);
   }
+<<<<<<< HEAD
+=======
+  
+>>>>>>> master
   return is;
 }
 
@@ -263,6 +318,7 @@ std::ostream & colvarbias_alb::write_restart (std::ostream &os)
 {
   os << "ALB {\n"
      << "  configuration {\n"
+<<<<<<< HEAD
     //      << "    id " << this->id << "\n"
      << "    name " << this->name << "\n";
 
@@ -270,6 +326,49 @@ std::ostream & colvarbias_alb::write_restart (std::ostream &os)
   //     << std::setprecision (cvm::en_prec)
   //     << std::setw (cvm::en_width) << set_coupling << "\n";
 
+=======
+     << "    name " << this->name << "\n";
+  os << "    setCoupling ";
+  for(size_t i = 0; i < colvars.size(); i++) {
+    os << std::setprecision (cvm::en_prec)
+       << std::setw (cvm::en_width) << set_coupling[i] << "\n";
+  }
+  os << "    currentCoupling ";
+  for(size_t i = 0; i < colvars.size(); i++) {
+    os << std::setprecision (cvm::en_prec)
+       << std::setw (cvm::en_width) << current_coupling[i] << "\n";
+  }
+  os << "    maxCouplingRange ";
+  for(size_t i = 0; i < colvars.size(); i++) {
+    os << std::setprecision (cvm::en_prec)
+       << std::setw (cvm::en_width) << max_coupling_range[i] << "\n";
+  }
+  os << "    couplingRate ";
+  for(size_t i = 0; i < colvars.size(); i++) {
+    os << std::setprecision (cvm::en_prec)
+       << std::setw (cvm::en_width) << coupling_rate[i] << "\n";
+  }
+  os << "    couplingAccum ";
+  for(size_t i = 0; i < colvars.size(); i++) {
+    os << std::setprecision (cvm::en_prec)
+       << std::setw (cvm::en_width) << coupling_accum[i] << "\n";
+  }
+  os << "    mean ";
+  for(size_t i = 0; i < colvars.size(); i++) {
+    os << std::setprecision (cvm::en_prec)
+       << std::setw (cvm::en_width) << means[i] << "\n";
+  }
+  os << "    ssd ";
+  for(size_t i = 0; i < colvars.size(); i++) {
+    os << std::setprecision (cvm::en_prec)
+       << std::setw (cvm::en_width) << ssd[i] << "\n";
+  }
+  os << "    updateCalls " << update_calls << "\n";
+  if(b_equilibration)
+    os << "    b_equilibration yes\n";
+  else
+    os << "    b_equilibration no\n";
+>>>>>>> master
 
   os << "  }\n"
      << "}\n\n";
@@ -288,7 +387,11 @@ std::ostream & colvarbias_alb::write_traj_label (std::ostream &os)
 
   if (b_output_coupling)
     for(size_t i = 0; i < current_coupling.size(); i++) {
+<<<<<<< HEAD
       os << " Alpha_" << i
+=======
+      os << " ForceConst_" << i
+>>>>>>> master
 	 <<std::setw(cvm::en_width - 6 - (i / 10 + 1))
 	 << "";
     }
@@ -353,7 +456,7 @@ cvm::real colvarbias_alb::restraint_potential(cvm::real k,  const colvar* x,  co
 
 colvarvalue colvarbias_alb::restraint_force(cvm::real k,  const colvar* x,  const colvarvalue &xcenter) const 
 {
-  return (k / xcenter)  * x->value() ;
+  return (k / xcenter);
 }
 
 cvm::real colvarbias_alb::restraint_convert_k(cvm::real k, cvm::real dist_measure) const 

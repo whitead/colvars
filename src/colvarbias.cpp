@@ -122,8 +122,8 @@ std::ostream & colvarbias::write_traj (std::ostream &os)
 colvarbias_restraint::colvarbias_restraint (std::string const &conf,
                                           char const *key)
   : colvarbias (conf, key),
-    target_nsteps (0),
-    target_nstages (0)
+    target_nstages (0),
+    target_nsteps (0)
 {
   get_keyval (conf, "forceConstant", force_k, 1.0);
 
@@ -426,7 +426,7 @@ std::istream & colvarbias_restraint::read_restart (std::istream &is)
             this->name+"\".\n");
 
   std::string key, brace, conf;
-  if ( !(is >> key)   || !(key == "harmonic") ||
+  if ( !(is >> key)   || !(key == "restraint" || key == "harmonic") ||
        !(is >> brace) || !(brace == "{") ||
        !(is >> colvarparse::read_block ("configuration", conf)) ) {
 
@@ -623,7 +623,7 @@ cvm::real colvarbias_restraint_linear::restraint_potential(cvm::real k,  colvar*
 
 colvarvalue colvarbias_restraint_linear::restraint_force(cvm::real k,  colvar* x,  const colvarvalue &xcenter) const 
 {
-  return k * x->value();
+  return k / xcenter;
 }
 
 cvm::real colvarbias_restraint_linear::restraint_convert_k(cvm::real k, cvm::real dist_measure) const 
